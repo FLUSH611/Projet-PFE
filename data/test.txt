@@ -1,0 +1,2 @@
+IT Storm est une société de consulting spécialisée en cloud et IA.
+Ce document de test permet de vérifier le pipeline RAG.

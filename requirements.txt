@@ -1,0 +1,22 @@
+fastapi
+streamlit
+chromadb
+sentence-transformers
+langchain
+langchain-community
+pypdf
+docx2txt
+transformers
+python-docx
+python-pptx
+reportlab
+pandas
+tiktoken
+httpx
+yfinance
+pydantic
+pytz
+plotly
+requests
+python-dotenv==1.0.1
+uvicorn==0.30.6   # seulement si tu utilises FastAPI
