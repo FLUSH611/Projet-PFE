@@ -17,8 +17,8 @@ from pathlib import Path
 import os
 
 
-env_path = Path(__file__).resolve().parents[2] / ".env.example"
-load_dotenv(dotenv_path=env_path, override=True)
+from dotenv import load_dotenv
+load_dotenv(dotenv_path="r.env", override=True)
 
 # strip accidental quotes/whitespace
 raw_key = os.getenv("MISTRAL_API_KEY", "")
@@ -38,7 +38,7 @@ from langchain.schema.runnable import RunnablePassthrough
 
 # --- Your RAG chain builder (from src/rag/chain.py) ---
 from src.rag.chain import build_rag_chain
-from src.rag.llm import get_llm
+from src.rag.llm import get_llm as get_mistral_llm
 from src.rag.retriever import get_retriever
 
 
@@ -152,8 +152,9 @@ def get_lc_embeddings():
     # Embeddings pour LangChain → doivent matcher ceux de l’index
     return SentenceTransformerEmbeddings(model_name=EMB_MODEL_NAME)
 
+
 @st.cache_resource
-def get_llm(model_name: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"):
+def get_hf_llm(model_name: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"):
     """
     LLM local léger (CPU OK). Tu peux le changer par:
     - "mistralai/Mistral-7B-Instruct-v0.2" (nécessite GPU)
@@ -207,7 +208,7 @@ Answer:
 
 def build_rag_chain(k: int = 4):
     retriever = get_retriever()
-    llm = get_llm()  # ou get_llm("mistralai/Mistral-7B-Instruct-v0.2") si GPU
+    llm = get_mistral_llm()  # ou get_llm("mistralai/Mistral-7B-Instruct-v0.2") si GPU
 
     # Post-traitement pour extraire texte + source
     def _format_docs(docs):
@@ -411,7 +412,7 @@ st.sidebar.subheader("Diagnostics")
 if st.sidebar.button("🧪 Ping Mistral"):
     try:
         from src.rag.llm import get_llm   # import here or at top of file
-        llm = get_llm()
+        llm = get_mistral_llm()
         resp = llm.invoke("Réponds par 'pong' uniquement.")
         st.success("✅ LLM OK")
         st.write(resp.content)
@@ -516,7 +517,20 @@ with tab4:
 
 
 
-API_BASE = "http://127.0.0.1:8001"
+import os, requests
+
+API_BASE = os.getenv("MARKET_API_URL", "http://127.0.0.1:8001")
+
+def get_quote(symbol: str):
+    r = requests.get(f"{API_BASE}/v1/quote/{symbol}", timeout=10)
+    r.raise_for_status()
+    return r.json()
+
+def get_history(symbol: str, period="1mo", interval="1d"):
+    r = requests.get(f"{API_BASE}/v1/history/{symbol}", params={"period": period, "interval": interval}, timeout=20)
+    r.raise_for_status()
+    return r.json()
+
 
 def api_get(path, **params):
     try:
